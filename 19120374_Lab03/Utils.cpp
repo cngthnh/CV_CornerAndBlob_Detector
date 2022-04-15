@@ -37,7 +37,7 @@ vector<vector<uchar>> calcDirection(Mat xGrad, Mat yGrad)
 		for (int x = 0; x < xGrad.cols; ++x)
 		{
 			uchar group;
-			float degree = atan(((double)yGrad.at<uchar>(y, x)) / xGrad.at<uchar>(y, x)) * (180.0 / M_PI);
+			double degree = atan(((double)yGrad.at<uchar>(y, x)) / xGrad.at<uchar>(y, x)) * (180.0 / M_PI);
 			if ((degree >= -22.5 && degree <= 22.5) || (degree >= 157.5) || (degree <= -157.5))
 			{
 				group = 0;
@@ -59,23 +59,21 @@ vector<vector<uchar>> calcDirection(Mat xGrad, Mat yGrad)
 }
 
 // Tạo bộ lọc Gauss với kích thước và sigma truyền vào
-vector<vector<float>> generateGaussianFilter(int size, float sigma)
+Mat generateGaussianFilter(int size, double sigma)
 {
-	vector<vector<float>> filter;
+	Mat filter = Mat::zeros(size, size, CV_32F);
 
 	double r, s = 2.0 * sigma * sigma;
 	double sum = 0.0;
 	int absSize = floor(size / 2);
 
 	for (int y = -absSize; y <= absSize; y++) {
-		vector<float> row;
 		for (int x = -absSize; x <= absSize; x++) {
 			r = sqrt(x * x + y * y);
 			double entry = (exp(-(r * r) / s)) / (M_PI * s);
-			row.push_back(entry);
+			filter.at<float>(y + absSize, x + absSize) = saturate_cast<float>(entry);
 			sum += entry;
 		}
-		filter.push_back(row);
 	}
 
 	// normalize
@@ -83,7 +81,37 @@ vector<vector<float>> generateGaussianFilter(int size, float sigma)
 	{
 		for (int j = 0; j < size; ++j)
 		{
-			filter[i][j] /= sum;
+			filter.at<float>(i, j) /= sum;
+		}
+	}
+
+	return filter;
+}
+
+Mat generateLoGFilter(int size, double sigma)
+{
+	Mat filter = Mat::zeros(size, size, CV_32F);
+
+	double r, sqrSigma = 2.0 * sigma * sigma;
+	double quadSigma = pow(sigma, 4);
+	double sum = 0.0;
+	int absSize = floor(size / 2);
+
+	for (int y = -absSize; y <= absSize; y++) {
+		for (int x = -absSize; x <= absSize; x++) {
+			r = -(x * x + y * y) / sqrSigma;
+			double entry = (-1.0 / (M_PI * quadSigma)) * (1 + r) * exp(r);
+			filter.at<float>(y + absSize, x + absSize) = saturate_cast<float>(entry);
+			sum += entry;
+		}
+	}
+
+	// normalize
+	for (int i = 0; i < size; ++i)
+	{
+		for (int j = 0; j < size; ++j)
+		{
+			filter.at<float>(i, j) /= sum;
 		}
 	}
 
@@ -103,7 +131,7 @@ void fillGreenDot(Mat& image, int posX, int posY)
 	}
 }
 
-void showFeatures(Mat src, Mat features)
+void showCorners(Mat src, Mat features)
 {
 	for (int y = 1; y < src.rows - 1; ++y)
 	{
@@ -115,6 +143,18 @@ void showFeatures(Mat src, Mat features)
 			}
 		}
 	}
-	imshow("RESULT", src);
+	imshow("Harris Corner Detector", src);
 	waitKey(0);
+}
+
+Mat convertAndSuppressNegatives(Mat img)
+{
+	Mat result = Mat::zeros(img.size(), CV_8UC1);
+	double min, max;
+	minMaxLoc(img, &min, &max);
+	if (min > 0) min = 0;
+	for (int y = 0; y < img.rows; ++y)
+		for (int x = 0; x < img.cols; ++x)
+			result.at<uchar>(y, x) = saturate_cast<uchar>((float)(img.at<float>(y, x)) / (max + min) * 255);
+	return result;
 }

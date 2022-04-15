@@ -1,6 +1,9 @@
 ﻿#include "HarrisCornerDetector.h"
+#include "ScaleSpaceBlobDetector.h"
 
 #define CMD_HARRIS "1"
+#define CMD_SCALED_NORM_BLOB_LOG "2"
+#define CMD_DOG_BLOB "3"
 
 int main(int argc, char** argv)
 {
@@ -34,8 +37,18 @@ int main(int argc, char** argv)
 
 	if (strcmp(argv[2], CMD_HARRIS) == 0)
 	{
-		Mat features = detectHarris(image, 0.1);
-		showFeatures(src, features);
+		Mat features = detectHarris(image, 0.04, 0.1);
+		showCorners(src, features);
+	}
+	else if (strcmp(argv[2], CMD_SCALED_NORM_BLOB_LOG) == 0)
+	{
+		Mat result = detectBlob(image, 10, LOG_FILTER);
+		drawBlob(src, result);
+	}
+	else if (strcmp(argv[2], CMD_DOG_BLOB) == 0)
+	{
+		Mat result = detectDOG(image, 10);
+		drawBlob(src, result);
 	}
 	return 0;
 }

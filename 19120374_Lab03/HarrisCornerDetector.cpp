@@ -1,20 +1,22 @@
 #include "HarrisCornerDetector.h"
 
-Mat detectHarris(Mat img, float k)
+Mat detectHarris(Mat img, float k, float thresholdRatio)
 {
-	vector<vector<float>> gFilter = generateGaussianFilter(5, 1.0);
-	img = conv(img, gFilter, -1, 1);
+	Mat gFilter = generateGaussianFilter(9, 1.0);
+	img.convertTo(img, CV_32F);
+	filter2D(img, img, -1, gFilter);
 
 	Mat xGrad, yGrad, A, B, C;
-	xGrad = conv(img, sobel_filter5x5_x, -1, 1);
-	yGrad = conv(img, sobel_filter5x5_y, -1, 1);
+	filter2D(img, xGrad, -1, sobel_filter3x3_x);
+	filter2D(img, yGrad, -1, sobel_filter3x3_y);
 
-	multiply(xGrad, xGrad, A, (1.0), CV_32SC1);
-	A = conv(A, gFilter, -1, 1);
-	multiply(xGrad, yGrad, B, (1.0), CV_32SC1);
-	B = conv(B, gFilter, -1, 1);
-	multiply(yGrad, yGrad, C, (1.0), CV_32SC1);
-	C = conv(C, gFilter, -1, 1);
+	multiply(xGrad, xGrad, A, (1.0), CV_32F);
+	filter2D(A, A, -1, gFilter);
+	multiply(yGrad, yGrad, B, (1.0), CV_32F);
+	filter2D(B, B, -1, gFilter);
+
+	multiply(xGrad, yGrad, C, (1.0), CV_32F);
+	filter2D(C, C, -1, gFilter);
 
 	Mat cornerResponse, det, traceSquare;
 	Mat AB, C2;
@@ -24,26 +26,14 @@ Mat detectHarris(Mat img, float k)
 	multiply(A + B, A + B, traceSquare);
 	subtract(det, k * traceSquare, cornerResponse);
 
-	cornerResponse = matIntToUchar(cornerResponse);
+	cornerResponse = convertAndSuppressNegatives(cornerResponse);
+	double max, min;
+	minMaxLoc(cornerResponse, &min, &max);
 
-	threshold(cornerResponse, 200);
+	threshold(cornerResponse, thresholdRatio * (max - min));
 	nonMaxSuppression(cornerResponse, 5);
 
 	return cornerResponse;
-}
-
-Mat matIntToUchar(Mat img)
-{
-	Mat result = Mat::zeros(img.size(), CV_8UC1);
-	int max = 0;
-	for (int y = 0; y < img.rows; ++y)
-		for (int x = 0; x < img.cols; ++x)
-			if (img.at<int>(y, x) > max)
-				max = img.at<int>(y, x);
-	for (int y = 0; y < img.rows; ++y)
-		for (int x = 0; x < img.cols; ++x)
-				result.at<uchar>(y, x) = saturate_cast<uchar>((float) img.at<int>(y, x) / max * 255);
-	return result;
 }
 
 void suppress(Mat& img, int posX, int posY, int windowSize)
@@ -66,7 +56,7 @@ void nonMaxSuppression(Mat& img, int windowSize)
 			suppress(img, x, y, windowSize);
 }
 
-void threshold(Mat& img, int threshold)
+void threshold(Mat& img, double threshold)
 {
 	for (int y = 0; y < img.rows; ++y)
 		for (int x = 0; x < img.cols; ++x)
