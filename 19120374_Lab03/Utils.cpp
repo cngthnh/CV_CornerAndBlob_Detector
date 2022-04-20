@@ -131,7 +131,7 @@ void fillGreenDot(Mat& image, int posX, int posY)
 	}
 }
 
-void showCorners(Mat src, Mat features)
+void showCorners(Mat src, Mat features, string outFile)
 {
 	for (int y = 1; y < src.rows - 1; ++y)
 	{
@@ -144,6 +144,8 @@ void showCorners(Mat src, Mat features)
 		}
 	}
 	imshow("Harris Corner Detector", src);
+	if (outFile.length() != 0)
+		imwrite(outFile, src);
 	waitKey(0);
 }
 
@@ -156,5 +158,42 @@ Mat convertAndSuppressNegatives(Mat img)
 	for (int y = 0; y < img.rows; ++y)
 		for (int x = 0; x < img.cols; ++x)
 			result.at<uchar>(y, x) = saturate_cast<uchar>((float)(img.at<float>(y, x)) / (max + min) * 255);
+	return result;
+}
+
+Extremum::Extremum(int y, int x, int octave, int layer)
+{
+	this->y = y;
+	this->x = x;
+	this->octave = octave;
+	this->layer = layer;
+}
+
+void drawKeypoints(Mat img, vector<CustomKeypoint> keypoints)
+{
+	for (int i = 0; i < keypoints.size(); ++i)
+	{
+		cout <<keypoints[i].octave<<" "<< keypoints[i].pt.x << " " << keypoints[i].pt.y << endl;
+		if (keypoints[i].pt.x > 1 && keypoints[i].pt.x < img.cols - 1 && keypoints[i].pt.y>1 && keypoints[i].pt.y < img.rows - 1)
+		fillGreenDot(img, keypoints[i].pt.x, keypoints[i].pt.y);
+	}
+	imshow("SIFT", img);
+	waitKey(0);
+}
+
+int mod(int a, int b) { return (a % b + b) % b; }
+
+vector<double> flatten(vector<vector<vector<double>>>& matrix, int start, int end)
+{
+	vector<double> result;
+	for (int i = start; i < mod(end, matrix.size()); ++i)
+	{
+		vector<double> flattenInnerVec;
+		for (int j = start; j < mod(end, matrix[i].size()); ++j)
+		{
+			flattenInnerVec.insert(flattenInnerVec.end(), matrix[i][j].begin(), matrix[i][j].end());
+		}
+		result.insert(result.end(), flattenInnerVec.begin(), flattenInnerVec.end());
+	}
 	return result;
 }

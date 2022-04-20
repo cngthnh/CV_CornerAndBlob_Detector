@@ -142,14 +142,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="HarrisCornerDetector.cpp" />
+    <ClCompile Include="KeypointMatcher.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ScaleSpaceBlobDetector.cpp" />
+    <ClCompile Include="SIFT.cpp" />
     <ClCompile Include="Sobel.cpp" />
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HarrisCornerDetector.h" />
+    <ClInclude Include="KeypointMatcher.h" />
     <ClInclude Include="ScaleSpaceBlobDetector.h" />
+    <ClInclude Include="SIFT.h" />
     <ClInclude Include="Sobel.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>

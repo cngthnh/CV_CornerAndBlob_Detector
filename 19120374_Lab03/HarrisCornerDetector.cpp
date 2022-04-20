@@ -6,6 +6,7 @@ Mat detectHarris(Mat img, float k, float thresholdRatio)
 	img.convertTo(img, CV_32F);
 	filter2D(img, img, -1, gFilter);
 
+	// calculate gradients
 	Mat xGrad, yGrad, A, B, C;
 	filter2D(img, xGrad, -1, sobel_filter3x3_x);
 	filter2D(img, yGrad, -1, sobel_filter3x3_y);
@@ -14,12 +15,12 @@ Mat detectHarris(Mat img, float k, float thresholdRatio)
 	filter2D(A, A, -1, gFilter);
 	multiply(yGrad, yGrad, B, (1.0), CV_32F);
 	filter2D(B, B, -1, gFilter);
-
 	multiply(xGrad, yGrad, C, (1.0), CV_32F);
 	filter2D(C, C, -1, gFilter);
 
 	Mat cornerResponse, det, traceSquare;
 	Mat AB, C2;
+	// calculate trace and det matrix
 	multiply(A, B, AB);
 	multiply(C, C, C2);
 	subtract(AB, C2, det);
@@ -36,6 +37,7 @@ Mat detectHarris(Mat img, float k, float thresholdRatio)
 	return cornerResponse;
 }
 
+// suppress pixels which aren't local maxima
 void suppress(Mat& img, int posX, int posY, int windowSize)
 {
 	int max = 0;
@@ -49,6 +51,7 @@ void suppress(Mat& img, int posX, int posY, int windowSize)
 				img.at<uchar>(y, x) = 0;
 }
 
+// scan for pixels using a window and suppress pixels that aren't local maxima
 void nonMaxSuppression(Mat& img, int windowSize)
 {
 	for (int y = 0; y < img.rows - windowSize; ++y)
@@ -56,6 +59,7 @@ void nonMaxSuppression(Mat& img, int windowSize)
 			suppress(img, x, y, windowSize);
 }
 
+// pixels that have those values less than threshold must be set to 0
 void threshold(Mat& img, double threshold)
 {
 	for (int y = 0; y < img.rows; ++y)
